@@ -242,35 +242,45 @@ func resourceOpensearchGetOpenDistroRole(roleID string, m interface{}) (RoleBody
 func resourceOpensearchPutOpenDistroRole(d *schema.ResourceData, m interface{}) (*RoleResponse, error) {
 	response := new(RoleResponse)
 
-	indexPermissions, err := expandIndexPermissionsSet(d.Get("index_permissions").(*schema.Set).List())
-	if err != nil {
-		fmt.Print("Error in index get : ", err)
-	}
 	var indexPermissionsBody []IndexPermissions
-	for _, idx := range indexPermissions {
-		putIdx := IndexPermissions{
-			IndexPatterns:         idx.IndexPatterns,
-			DocumentLevelSecurity: idx.DocumentLevelSecurity,
-			FieldLevelSecurity:    idx.FieldLevelSecurity,
-			MaskedFields:          idx.MaskedFields,
-			AllowedActions:        idx.AllowedActions,
+	if _, ok := d.GetOk("index_permissions"); ok {
+		indexPermissions, err := expandIndexPermissionsSet(d.Get("index_permissions").(*schema.Set).List())
+		if err != nil {
+			fmt.Print("Error in index get : ", err)
 		}
-		indexPermissionsBody = append(indexPermissionsBody, putIdx)
+		
+		for _, idx := range indexPermissions {
+			putIdx := IndexPermissions{
+				IndexPatterns:         idx.IndexPatterns,
+				DocumentLevelSecurity: idx.DocumentLevelSecurity,
+				FieldLevelSecurity:    idx.FieldLevelSecurity,
+				MaskedFields:          idx.MaskedFields,
+				AllowedActions:        idx.AllowedActions,
+			}
+			indexPermissionsBody = append(indexPermissionsBody, putIdx)
+		}
+
 	}
 
-	tenantPermissions, err := expandTenantPermissionsSet(d.Get("tenant_permissions").(*schema.Set).List())
-	if err != nil {
-		fmt.Print("Error in tenant get : ", err)
-	}
 	var tenantPermissionsBody []TenantPermissions
-	for _, tenant := range tenantPermissions {
-		putTeanant := TenantPermissions{
-			TenantPatterns: tenant.TenantPatterns,
-			AllowedActions: tenant.AllowedActions,
-		}
-		tenantPermissionsBody = append(tenantPermissionsBody, putTeanant)
-	}
 
+	if _, ok := d.GetOk("tenant_permissions"); ok {
+		tenantPermissions, err := expandTenantPermissionsSet(d.Get("tenant_permissions").(*schema.Set).List())
+		if err != nil {
+			fmt.Print("Error in tenant get : ", err)
+		}
+		
+		for _, tenant := range tenantPermissions {
+			putTeanant := TenantPermissions{
+				TenantPatterns: tenant.TenantPatterns,
+				AllowedActions: tenant.AllowedActions,
+			}
+			tenantPermissionsBody = append(tenantPermissionsBody, putTeanant)
+		}
+	
+	}
+	
+	
 	rolesDefinition := RoleBody{
 		ClusterPermissions: expandStringList(d.Get("cluster_permissions").(*schema.Set).List()),
 		IndexPermissions:   indexPermissionsBody,
